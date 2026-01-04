@@ -1,0 +1,449 @@
+void CreateExtraSensoryPerceptionhackFixed(Response &response)
+{
+
+    if (MasterBool.ActivateAll) {
+        void *GameFacade = *(void **) getRealOffset(0x8DCFE68);
+        if (GameFacade != nullptr) {
+            void *MatchGame = *(void **) ((uint64_t) GameFacade + 0x5C);
+            if (MatchGame != nullptr) {
+                void *ClassMatchGame = *(void **) ((uint64_t) MatchGame + 0x4);
+                if (ClassMatchGame != nullptr) {
+                    void *current_match = *(void **) ((uint64_t) ClassMatchGame + 0x50);
+                    if (current_match != nullptr) {
+                        auto matchStatus = *(uint32_t *) ((uint64_t) current_match + 0x3c);
+                        if (matchStatus == 1) {
+                            void *CurrentLocalPlayer = Current_Local_Player();
+                            if (CurrentLocalPlayer != nullptr) {
+
+                                System_Collections_Generic_Dictionary_IHAAMHPPLMG__Player__o *MonoPlayer = *(System_Collections_Generic_Dictionary_IHAAMHPPLMG__Player__o **)((uint64_t) current_match + pAddress.DictionaryEntities);
+                                if (MonoPlayer != nullptr) {
+                                    COW_GamePlay_Player_array *players = MonoPlayer->valueSlots;
+                                    if (players != nullptr) {
+                                        int countagempartida = players->max_length;
+                                        if (countagempartida != 1) {
+                                            for (int i = 0; i < countagempartida; ++i) {
+                                                if (players->m_Items[i] != nullptr &&
+                                                    players->m_Items[i] != CurrentLocalPlayer) {
+                                                    if (IsStreamerVisible(players->m_Items[i]) &&!IsLocalTeammate(players->m_Items[i]) &&GetHp(players->m_Items[i]) > 0) {
+
+                                                        void *HeadTF = TransformNode(*(void **) ((uintptr_t) players->m_Items[i] +pAddress.HeadTF));
+                                                        void *PesTF = TransformNode(*(void **) ((uintptr_t) players->m_Items[i] +pAddress.PesTF));
+                                                        void *HeadTFLocal = TransformNode(*(void **) ((uintptr_t) CurrentLocalPlayer +pAddress.HeadTF));
+                                                        Vector3 WorldToScreenHead = WorldToScreenPoint(Transform_INTERNAL_GetPosition(HeadTF));
+
+                                                        Vector3 WorldToScreenPes = WorldToScreenPoint(Transform_INTERNAL_GetPosition(PesTF));
+
+                                                        bool Caido2 = IsDieing(players->m_Items[i]);
+                                                        float distance = Vector3::Distance(Transform_INTERNAL_GetPosition(HeadTFLocal),Transform_INTERNAL_GetPosition(HeadTF));
+
+                                                        PlayerData *data = &response.Players[response.PlayerCount];
+                                                        if (data != nullptr) {
+                                                            data->headPosition = WorldToScreenHead;
+                                                            data->bottomPlayerPosition = WorldToScreenPes;
+                                                            data->distance = distance;
+                                                            data->isDieing = Caido2;
+                                                            data->health = GetHp(players->m_Items[i]);
+                                                        }
+                                                        ++response.PlayerCount;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+
+                            response.PlayerCount = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+}
+
+void *GetEnemyInsideFOV()
+{
+
+    float MaxDist = 9999.0f;
+    void *closestEnemy = nullptr;
+    void *GameFacade = *(void **) getRealOffset(0x8DCFE68);
+    if (GameFacade != nullptr) {
+        void *MatchGame = *(void **) ((uint64_t) GameFacade + 0x5C);
+        if (MatchGame != nullptr) {
+            void *ClassMatchGame = *(void **) ((uint64_t) MatchGame + 0x4);
+            if (ClassMatchGame != nullptr) {
+                void *current_match = *(void **) ((uint64_t) ClassMatchGame + 0x50);
+                if (current_match != nullptr) {
+                    auto matchStatus = *(uint32_t *) ((uint64_t) current_match + 0x3c);
+                    if (matchStatus == 1) {
+                        void *CurrentLocalPlayer = Current_Local_Player();
+                        if (CurrentLocalPlayer != nullptr) {
+                            System_Collections_Generic_Dictionary_IHAAMHPPLMG__Player__o *MonoPlayer = *(System_Collections_Generic_Dictionary_IHAAMHPPLMG__Player__o **)((uint64_t) current_match + pAddress.DictionaryEntities);
+                            if (MonoPlayer != nullptr) {
+                                COW_GamePlay_Player_array *players = MonoPlayer->valueSlots;
+                                if (players != nullptr) {
+                                    int countagempartida = players->max_length;
+                                    if (countagempartida != 1) {
+                                        for (int i = 0; i < countagempartida; ++i) {
+                                            if (players->m_Items[i] != nullptr &&players->m_Items[i] != CurrentLocalPlayer) {
+                                                if (IsStreamerVisible(players->m_Items[i]) && !IsDieing(players->m_Items[i]) && !IsLocalTeammate(players->m_Items[i]) && GetHp(players->m_Items[i]) > 0) {
+                                                    void *HeadTF = TransformNode(*(void **) ((uint64_t) players->m_Items[i] +pAddress.HeadTF));
+                                                    if (HeadTF != nullptr) {
+                                                        Vector3 currentLocation = Transform_INTERNAL_GetPosition(HeadTF);
+                                                        Vector3 WorldToScreenHead = WorldToScreenPoint(currentLocation);
+
+                                                        if (WorldToScreenHead.Z >= 0.01f) {
+                                                            Vector3 v2Middle = Vector3((float) (g_screenWidth / 2),(float) (g_screenHeight / 2));
+                                                            Vector3 v2Loc = Vector3(WorldToScreenHead.X,WorldToScreenHead.Y);
+                                                            float Distance = (float) CalculateDistance(v2Middle, v2Loc);
+                                                            if (isInsideFOV((int) WorldToScreenHead.X,(int) WorldToScreenHead.Y)) {
+                                                                if (Distance < MaxDist) {
+                                                                    closestEnemy = players->m_Items[i];
+                                                                    MaxDist = Distance;
+                                                                }
+                                                            }
+                                                        }
+
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return closestEnemy;
+
+}std::vector<void *> GetAllEnemiesInsideFOV()
+{
+    std::vector<void *> allEnemies;
+    void *GameFacade = *(void **) getRealOffset(0x8DCFE68);
+    if (GameFacade != nullptr) {
+        void *MatchGame = *(void **) ((uint64_t) GameFacade + 0x5C);
+        if (MatchGame != nullptr) {
+            void *ClassMatchGame = *(void **) ((uint64_t) MatchGame + 0x4);
+            if (ClassMatchGame != nullptr) {
+                void *current_match = *(void **) ((uint64_t) ClassMatchGame + 0x50);
+                if (current_match != nullptr) {
+                    auto matchState = *(uint32_t *) ((uint64_t) current_match + 0x3c);
+                    if (matchState == 1) {
+                        void *CurrentLocalPlayer = Current_Local_Player();
+                        if (CurrentLocalPlayer != nullptr) {
+                            System_Collections_Generic_Dictionary_IHAAMHPPLMG__Player__o *MonoPlayer = *(System_Collections_Generic_Dictionary_IHAAMHPPLMG__Player__o **)((uint64_t) current_match + pAddress.DictionaryEntities);
+                            if (MonoPlayer != nullptr) {
+                                COW_GamePlay_Player_array *players = MonoPlayer->valueSlots;
+                                if (players != nullptr) {
+                                    int countagempartida = players->max_length;
+                                    if (countagempartida != 1) {
+                                        for (int i = 0; i < countagempartida; ++i) {
+                                            if (players->m_Items[i] != nullptr && players->m_Items[i] != CurrentLocalPlayer) {
+                                                if (IsStreamerVisible(players->m_Items[i]) && !IsDieing(players->m_Items[i]) && !IsLocalTeammate(players->m_Items[i]) && GetHp(players->m_Items[i]) > 0) {
+                                                    void *HeadTF = TransformNode(*(void **) ((uint64_t) players->m_Items[i] + pAddress.HeadTF));
+                                                    if (HeadTF != nullptr) {
+                                                        Vector3 currentLocation = Transform_INTERNAL_GetPosition(HeadTF);
+                                                        Vector3 WorldToScreenHead = WorldToScreenPoint(currentLocation);
+                                                        if (WorldToScreenHead.Z >= 0.01f) {
+                                                            if (isInsideFOV((int) WorldToScreenHead.X, (int) WorldToScreenHead.Y)) {
+
+
+                                                        allEnemies.push_back(players->m_Items[i]);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return allEnemies;
+}
+
+
+
+
+struct DamageInfo2_o {
+    void *klass;
+    void *monitor;
+    int32_t DBLBLKADCNP;
+    int32_t KENBMOOEHBG;
+    monoString* JANPNJIFOJJ;
+    bool NNNADMOFPIE;
+    COW_GamePlay_IHAAMHPPLMG_o DHGCIEKPBFA;
+    void* GPBDEDFKJNA;
+    int32_t PIAMIOFEBKF;
+    Vector3 CNEICNJFGLM;
+    Vector3 HECJHKEDFEB;
+    Vector3 JNLGFLFLBHO;
+    uint8_t ACAKHEABPEJ;
+    bool MJIHLDJNHLF;
+    int32_t LOKIMAEAPCB;
+    monoDictionary<uint8_t*, void **> *FHLFLAHCIBN;
+};
+
+
+static int GetDamage(void *pthis)
+{
+    return ((int (*)(void *))getRealOffset(0x19B1904))(pthis);
+}
+COW_GamePlay_IHAAMHPPLMG_o GetplayerID(void *_this)
+{
+    return ((COW_GamePlay_IHAAMHPPLMG_o (*)(void *))getRealOffset(0x137C43C))(_this);
+}
+static void *GetWeaponOnHand(void *local) {
+    void *(*GetWeaponOnHand)(void *local) = (void *(*)(void *))getRealOffset(0x13945E0);
+    return GetWeaponOnHand(local);
+}
+void SwapWeapon(void *Pthis,int32_t FANMJANBFIL,bool GDKLMFLNNGM)
+{
+    return ((void (*)(void *,int,bool,void*))getRealOffset(0x1A2348C))(Pthis,FANMJANBFIL,GDKLMFLNNGM,nullptr);
+}
+bool GameFacade_Send(uint32_t messageID,void *msg,uint8_t sendOption,bool cacheMsgAnyWay)
+{
+    return ((bool (*)(uint32_t,void *,uint8_t,bool))getRealOffset(0x197DB40))(messageID,msg,sendOption,cacheMsgAnyWay);
+}
+
+uint32_t CFFPIACECIG(COW_GamePlay_IHAAMHPPLMG_o IDNEFEOPGIF)
+{
+    return ((uint32_t (*)(COW_GamePlay_IHAAMHPPLMG_o))getRealOffset(0x215F754))(IDNEFEOPGIF);
+}
+void *GKHECDLGAJA(void *pthis, void* a1)
+{
+    return ((void* (*)(void *,void *))getRealOffset(0x1408C68))(pthis,a1);
+}
+void Syns_SwapWeapon(void *LocalPlayer)
+{
+    void *WeaponOnHand = GetWeaponOnHand(LocalPlayer);
+    if (WeaponOnHand != nullptr)
+    {
+        void *Class_RUDP_CHANGE_INVENTORY_ON_HAND_c = *(void **)getRealOffset(0x8DD60F4);
+        if (Class_RUDP_CHANGE_INVENTORY_ON_HAND_c == nullptr)
+        {
+            int max;
+            max = 5;
+            SwapWeapon(LocalPlayer,rand()%max,1);
+        }
+        if (Class_RUDP_CHANGE_INVENTORY_ON_HAND_c != nullptr)
+        {
+            auto RUDP_CHANGE_INVENTORY_ON_HAND = ((void * (*)(void *))getRealOffset(0xE79744))(Class_RUDP_CHANGE_INVENTORY_ON_HAND_c);
+            if (RUDP_CHANGE_INVENTORY_ON_HAND)
+            {
+
+                *(uint32_t*)((uint64_t)RUDP_CHANGE_INVENTORY_ON_HAND + 0xc) = CFFPIACECIG(GetplayerID(LocalPlayer));
+                *(uint32_t*)((uint64_t)RUDP_CHANGE_INVENTORY_ON_HAND + 0x10) = *(uint32_t*)((uint64_t)WeaponOnHand + 0x8);
+                GameFacade_Send(108, (GCommon_UDPClientMessageBase_o *)RUDP_CHANGE_INVENTORY_ON_HAND, 2, 0);
+            }
+        }
+    }
+    return;
+}
+monoList<float *> *LCLHHHKFCFP(void *Weapon,void *CAGCICACKCF,void *HFBDJJDICLN,bool LDGHPOPPPNL,DamageInfo2_o *DamageInfo)
+{
+    return ((monoList<float *> * (*)(void*,void*,void*,bool,DamageInfo2_o*))getRealOffset(0x19DCF6C))(Weapon,CAGCICACKCF,HFBDJJDICLN,LDGHPOPPPNL,DamageInfo);
+}
+
+int32_t Player_TakeDamage(void *Player, int32_t p_damage, COW_GamePlay_IHAAMHPPLMG_o PlayerID, DamageInfo2_o *DamageInfo, int32_t WeaponDataID, Vector3 FirePos, Vector3 TargetPos, monoList<float *> *CheckParams, void *p_idk1, int32_t p_idk2) {
+    return ((int32_t (*)(void *, int32_t, COW_GamePlay_IHAAMHPPLMG_o, DamageInfo2_o *, int32_t, Vector3, Vector3, monoList<float *> *, void *, uint32_t))getRealOffset(0x1A0237C))(Player, p_damage, PlayerID, DamageInfo, WeaponDataID, FirePos, TargetPos, CheckParams, p_idk1, p_idk2);
+}
+
+bool (*OriginalFunction)();
+bool HookedFunction() {
+    return true;
+}
+void ApplyHook() {
+    static bool hookApplied = false;
+    if (MasterBool.Aimkill && !hookApplied) {
+        void* targetFunction = (void*)getRealOffset(0x179AB40);
+        DobbyHook(targetFunction, (void*)&HookedFunction, (void **)&OriginalFunction);
+        hookApplied = true;
+    }
+}
+
+void StartAimKill(void* targetVivo)
+{
+    if (MasterBool.Aimkill)
+    {
+        ApplyHook();
+        void *LocalPlayer = Current_Local_Player();
+        if (LocalPlayer != NULL) {
+            void *weaponOnHand = GetWeaponOnHand(LocalPlayer);
+            if (weaponOnHand != nullptr)
+            {
+                //LOGI("weaponOnHand");
+                static bool s_Il2CppMethodIntialized;
+                if (!s_Il2CppMethodIntialized)
+                {
+                    ((void (*)(void *,void*))getRealOffset(0x19D9278))(weaponOnHand, *(void**)((uint64_t)LocalPlayer + 0x808));
+                    ((void* (*)(void *))getRealOffset(0x1373EF8))(LocalPlayer);
+                    s_Il2CppMethodIntialized = true;
+                }
+
+                void* targetEnemy = nullptr;
+                targetEnemy = targetVivo;
+
+                if (targetEnemy != nullptr)
+                {
+
+                    void *ObjectPool = *(void **)((uintptr_t)LocalPlayer + 0x808);
+                    if(ObjectPool != nullptr)
+                    {
+                      //   LOGI("ObjectPool");
+                        Syns_SwapWeapon(LocalPlayer);
+                        ((void* (*)(void *, void *))getRealOffset(0x1A22688))(LocalPlayer, weaponOnHand);
+                        auto weaponDataID = *(uint32_t*)((uint64_t)*(void**)((uint64_t)weaponOnHand + 0x5C) + 0x8);
+                        auto baseDamage = GetDamage(weaponOnHand);
+                        auto playerID = GetplayerID(LocalPlayer);
+                        auto playerID2 = GetplayerID(targetEnemy);
+                        void *HeadTF = TransformNode(*(void **) ((uint64_t) targetEnemy + pAddress.HeadTF));
+                        Vector3 m_Head = Transform_INTERNAL_GetPosition(HeadTF);
+
+                        void *HeadTF2 = TransformNode(*(void **) ((uint64_t) LocalPlayer + pAddress.Shoulder));
+                        Vector3 m_HeadLocal = Transform_INTERNAL_GetPosition(HeadTF2);
+                        Vector3 LocalPlayerPos = CameraPosition(LocalPlayer);
+
+
+                        auto DamageS2c = (message_CHDLJFJCPFN_o *)((void* (*)(void *))getRealOffset(0x1373EF8))(LocalPlayer);
+                        if (DamageS2c)
+                        {
+                           // LOGI("DamageS2c");
+                            void *Class_message_DamageInfo_c = *(void **)getRealOffset(0x8DCFF9C);
+                            if (Class_message_DamageInfo_c)
+                            {
+                              //   LOGI("Class_message_DamageInfo_c");
+                                auto DamageInfo = (DamageInfo2_o *)((void * (*)(void *))getRealOffset(0xE79744))(Class_message_DamageInfo_c);
+                                if (DamageInfo)
+                                {
+                                    //LOGI("DamageInfo");
+                                    *(int*)((char*)DamageInfo + 0x8) = baseDamage;
+                                    *(int*)((char*)DamageInfo + 0xC) = 1;
+                                    *(void**)((char*)DamageInfo + 0x30) = weaponOnHand;
+                                    *(int*)((char*)DamageInfo + 0x34) = weaponDataID;
+                                    *(COW_GamePlay_IHAAMHPPLMG_o *)((char*)DamageInfo + 0x18) = playerID;
+                                    void *JEEIBOEGGPD = *(void**)((uint64_t)LocalPlayer + 0x808);
+                                    *(void**)((uint64_t)JEEIBOEGGPD + string2Offset(OBFUSCATE("0xc"))) = get_gameObject(get_HeadCollider(targetEnemy));
+                                    *(void**)((uint64_t)JEEIBOEGGPD + string2Offset(OBFUSCATE("0x10"))) = get_HeadCollider(targetEnemy);
+                                    *(int*)((uint64_t)JEEIBOEGGPD + 0x50) = 1;
+                                    monoList<float *> *CheckParametros = LCLHHHKFCFP(GetWeaponOnHand(LocalPlayer),GKHECDLGAJA(LocalPlayer,*(void**)((uint64_t)LocalPlayer + 0x808)),get_HeadCollider(targetEnemy),false,DamageInfo);
+
+                                    Player_TakeDamage(targetEnemy, baseDamage, playerID, DamageInfo, weaponDataID, m_HeadLocal, m_Head, CheckParametros, CheckParametros, 0);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return;
+}
+
+static float get_Range(void *pthis)
+{
+    return ((float (*)(void *))getRealOffset(0x19ace84))(pthis);
+}
+bool isEnemyInRangeWeapon(void *player, void *enemy, void* weapon)
+{
+    if (player != nullptr && enemy != nullptr && weapon != nullptr)
+    {
+        void *HeadTF = TransformNode(*(void **) ((uint64_t) enemy + pAddress.HeadTF));
+        void *HeadTF2 = TransformNode(*(void **) ((uint64_t) player + pAddress.HeadTF));
+        Vector3 EnemyHeadPosition = Transform_INTERNAL_GetPosition(HeadTF);
+        Vector3 PlayerHeadPosition = Transform_INTERNAL_GetPosition(HeadTF2);
+        float distance = Vector3::Distance(PlayerHeadPosition, EnemyHeadPosition);
+        float range = get_Range(weapon);
+
+        if (distance <= range) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+// Replace this with your own timer method if needed
+float GetTimeSeconds() {
+    using namespace std::chrono;
+    static auto start = high_resolution_clock::now();
+    auto now = high_resolution_clock::now();
+    return duration<float>(now - start).count();
+}
+std::chrono::steady_clock::time_point last_update_time = std::chrono::steady_clock::now();
+
+GCommon_AnimationRuntimeHandle_o *(*GetCurrentRunningHandler)(GCommon_AnimationSystemComponent_o *Instance,int32_t layerIndex);
+GCommon_AnimationRuntimeHandle_o *_GetCurrentRunningHandler(GCommon_AnimationSystemComponent_o *Instance,int32_t layerIndex)
+{
+    if (Instance != nullptr) {
+        if (MasterBool.ActivateAll) {
+            std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
+            auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_update_time).count();
+            if (elapsed_time > 1000 /20) {
+                void *LocalPlayer = Current_Local_Player();
+                if (LocalPlayer != nullptr) {
+
+                    std::vector<void *> enemies = GetAllEnemiesInsideFOV();
+                    void *ClosestEnemy = GetEnemyInsideFOV();
+
+                    if (!enemies.empty()) {
+                        void *LocalPlayer = Current_Local_Player();
+                        if (LocalPlayer != nullptr) {
+                            void *weaponOnHand = GetWeaponOnHand(LocalPlayer);
+                            if (MasterBool.Aimkilltp && ClosestEnemy != nullptr) {
+
+
+                                Vector3 gotten = Transform_INTERNAL_GetPosition(
+                                        Component_get_transform(LocalPlayer));
+                                Vector3 enemyPos = Transform_INTERNAL_GetPosition(
+                                        Component_get_transform(ClosestEnemy));
+
+                                float realDistance = sqrt(pow(enemyPos.X - gotten.X, 2) +
+                                                          pow(enemyPos.Y - gotten.Y, 2) +
+                                                          pow(enemyPos.Z - gotten.Z, 2));
+
+                                if (realDistance < 9.0f) {
+                                    Vector3 coord = gotten;
+                                    Transform_set_position(
+                                            Component_get_transform(ClosestEnemy), coord);
+                                }
+
+                            }
+                        
+                            if (weaponOnHand != nullptr) {
+                                for (void *enemy : enemies) {
+                                    if (isEnemyInRangeWeapon(LocalPlayer, enemy, weaponOnHand)) {
+                                          if (isVisible_Aimbot(enemy)) {
+                                        StartAimKill(enemy);
+                                            }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+                last_update_time = std::chrono::steady_clock::now();
+            }
+
+            return GetCurrentRunningHandler(Instance, layerIndex);
+        }
+    }
+    return GetCurrentRunningHandler(Instance,layerIndex);
+}
+
+
+
+       HOOK_LIB2(0x4E8E35C, _GetCurrentRunningHandler, GetCurrentRunningHandler);
